@@ -5,6 +5,7 @@
 [![Downloads](https://static.pepy.tech/badge/looba-mcp/month)](https://pepy.tech/project/looba-mcp)
 [![License](https://img.shields.io/github/license/looba-snippet/looba-mcp)](https://github.com/looba-snippet/looba-mcp/blob/main/LICENSE)
 [![Website](https://img.shields.io/badge/website-looba.dev-1f8ceb)](https://looba.dev)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/looba-mcp?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/looba-mcp)
 
 An [MCP](https://modelcontextprotocol.io) server that gives AI assistants read-only access to [Looba](https://looba.dev) a community platform for UI snippets and design inspiration.
 
