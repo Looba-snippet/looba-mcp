@@ -209,9 +209,10 @@ Every response includes **source URL**, **author**, and **license** so AI assist
 
 ## Deploying to Cloudflare Workers
 
-`mcp.looba.dev` can run as a Cloudflare Worker instead of a VPS. The Worker
-serves the same seven tools over Streamable HTTP, statelessly, with **no Durable
-Object** — the tools are network-bound, so this fits the Workers Free plan.
+`mcp.looba.dev` **runs as a Cloudflare Worker**. It serves the same seven tools
+over Streamable HTTP, statelessly, with **no Durable Object** — the tools are
+network-bound, so this fits the Workers Free plan. It previously ran as a
+systemd service behind nginx on a VPS; that stack has been removed.
 
 Two files drive it: `worker.js` (the `fetch` entrypoint) and `wrangler.jsonc`.
 `index.js` is shared by both transports and needs no fork.
