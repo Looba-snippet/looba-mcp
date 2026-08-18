@@ -59,13 +59,29 @@ npm install
 
 ### detect_frontend_context
 
-When Looba MCP is active, the AI automatically calls `detect_frontend_context` at the start of a session. It scans the project directory for frontend signals:
+When Looba MCP is active, the AI automatically calls `detect_frontend_context` at the start of a session. It looks for frontend signals:
 
 - **Dependencies** — React, Vue, Svelte, Next.js, Angular, Astro, Remix, SolidJS, Gatsby, Lit, Preact…
 - **Config files** — `vite.config.ts`, `tailwind.config.js`, `next.config.js`, `angular.json`, `astro.config.mjs`…
 - **File extensions** — `.jsx`, `.tsx`, `.vue`, `.svelte`, `.astro` in `src/`, `app/`, `pages/`, `components/`
 
 If a frontend project is detected, the AI uses Looba by default for any UI component request — instead of writing code from scratch.
+
+#### Local vs remote servers
+
+The tool takes two optional inputs:
+
+| Input | When to use |
+|---|---|
+| `packageJson` | **Preferred.** The contents of your project's `package.json`, as text or a parsed object. Works no matter where the server runs. |
+| `directory` | Only when the server runs on the same machine as your project (`npx looba-mcp` over stdio). |
+
+This matters because Looba MCP is also hosted remotely at `mcp.looba.dev`. A remote
+server has no access to your filesystem, so `directory` alone tells it nothing.
+
+When the tool cannot inspect the project it reports `? UNKNOWN` and asks the caller
+to retry with `packageJson` — it never reports a confident "not a frontend project",
+because a false negative would silently switch Looba off.
 
 ### propose_snippets
 
