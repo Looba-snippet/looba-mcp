@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "looba-mcp",
+  "main": "worker.js",
+  "compatibility_date": "2026-08-18",
+
+  // Required. index.js uses node:crypto (createHmac for the proposal token),
+  // Buffer, and node:path. nodejs_compat provides all of them, which is why
+  // the signing code stays synchronous and needs no WebCrypto rewrite.
+  "compatibility_flags": ["nodejs_compat"],
+
+  "observability": {
+    "enabled": true
+  },
+
+  "vars": {
+    "LOOBA_ORIGIN": "https://looba.dev"
+  }
+
+  // LOOBA_MCP_TOKEN_SECRET is intentionally NOT set here — it is a secret, set
+  // with `wrangler secret put LOOBA_MCP_TOKEN_SECRET` (or in the dashboard).
+  //
+  // It is not optional. index.js falls back to randomBytes(32) per process,
+  // which on a stateless Worker means a different secret per isolate: a token
+  // minted by propose_snippets would fail verification in integrate_post when
+  // the two calls land on different isolates. See README, "Deploying to
+  // Cloudflare Workers".
+}

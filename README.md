@@ -207,6 +207,69 @@ Once connected, ask your AI assistant things like:
 
 Every response includes **source URL**, **author**, and **license** so AI assistants always cite properly.
 
+## Deploying to Cloudflare Workers
+
+`mcp.looba.dev` can run as a Cloudflare Worker instead of a VPS. The Worker
+serves the same seven tools over Streamable HTTP, statelessly, with **no Durable
+Object** — the tools are network-bound, so this fits the Workers Free plan.
+
+Two files drive it: `worker.js` (the `fetch` entrypoint) and `wrangler.jsonc`.
+`index.js` is shared by both transports and needs no fork.
+
+### 1. Set the secret — do this first
+
+```bash
+npx wrangler secret put LOOBA_MCP_TOKEN_SECRET
+```
+
+**This is not optional.** `propose_snippets` mints an HMAC-signed token that
+`integrate_post` verifies. Without an explicit secret, `index.js` falls back to
+`randomBytes(32)` *per process* — and on a stateless Worker each isolate gets a
+different one, so the two calls fail to agree whenever they land on different
+isolates. The failure is intermittent and reports a bogus "token signature is
+invalid".
+
+Any long random string works, e.g. `openssl rand -hex 32`.
+
+### 2a. Deploy from Git (Workers Builds)
+
+Connect this repository in the Cloudflare dashboard, then set:
+
+| Field | Value |
+|---|---|
+| Build command | `npm install` |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | `/` |
+
+Every push to `main` then redeploys.
+
+### 2b. Or deploy from your machine
+
+```bash
+npm install
+npm run deploy
+```
+
+### 3. Attach the domain
+
+Add `mcp.looba.dev` as a **Custom Domain** on the Worker. `looba.dev` is already
+on Cloudflare nameservers, so no DNS change is needed.
+
+The Worker answers at the **root path** (`route: "/"` in `worker.js`), matching
+the existing endpoint. `createMcpHandler` defaults to `/mcp`, so that setting
+must not be removed or every existing client breaks.
+
+### 4. Verify before switching traffic
+
+```bash
+npm run dev:worker   # local, needs .dev.vars — see .dev.vars.example
+```
+
+Beyond `initialize` and `tools/list`, test the pair that depends on the shared
+secret — mint a token with `propose_snippets`, restart the Worker, then spend it
+with `integrate_post`. If the token still verifies after a restart, the secret is
+being read from configuration rather than regenerated per process.
+
 ## License
 
 MIT

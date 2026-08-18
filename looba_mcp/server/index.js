@@ -196,7 +196,16 @@ const FRONTEND_FILE_EXTENSIONS = [".jsx", ".tsx", ".vue", ".svelte", ".astro"];
 
 // Directory this server is installed in. Used to recognise the case where a
 // disk scan would describe the server itself rather than a user's project.
-const SERVER_ROOT = dirname(fileURLToPath(import.meta.url));
+// Null when there is no module URL to resolve — notably inside a bundled
+// Cloudflare Worker, where `import.meta.url` is undefined and there is no
+// install directory to speak of.
+const SERVER_ROOT = (() => {
+  try {
+    return import.meta.url ? dirname(fileURLToPath(import.meta.url)) : null;
+  } catch {
+    return null;
+  }
+})();
 
 function mergeDeps(pkg) {
   return {
@@ -248,6 +257,7 @@ function normalizePackageJson(input) {
 }
 
 function isServerOwnDirectory(dir) {
+  if (!SERVER_ROOT) return false;
   try {
     return realpathSync(dir) === realpathSync(SERVER_ROOT);
   } catch {
@@ -399,10 +409,26 @@ function showInteractiveBanner() {
 // MCP Server
 // ---------------------------------------------------------------------------
 
-const server = new McpServer({
-  name: "looba",
-  version: MCP_CLIENT_VERSION,
-});
+// Tool registrations are collected rather than bound to one McpServer, so a
+// fresh instance can be built per connection. An McpServer binds to a single
+// transport, so sharing one instance across concurrent connections is unsafe:
+// the stdio entrypoint needs one, a Workers fetch handler needs one per
+// request. `createServer()` below replays these onto a real instance.
+const toolRegistrations = [];
+const server = { tool: (...args) => toolRegistrations.push(args) };
+
+// `version` can be supplied by callers that cannot read package.json from
+// disk. A bundled Worker is the case in point: there is no module URL to
+// resolve the file from, so MCP_CLIENT_VERSION degrades to "unknown" and the
+// entrypoint passes the value in instead.
+export function createServer({ version = MCP_CLIENT_VERSION } = {}) {
+  const instance = new McpServer({
+    name: "looba",
+    version,
+  });
+  for (const args of toolRegistrations) instance.tool(...args);
+  return instance;
+}
 
 // ---- Tool: detect_frontend_context ----
 
@@ -1042,7 +1068,7 @@ server.tool(
 async function main() {
   showInteractiveBanner();
   const transport = new StdioServerTransport();
-  await server.connect(transport);
+  await createServer().connect(transport);
 }
 
 // Only start the transport when this file is the process entrypoint, so the
@@ -1050,10 +1076,20 @@ async function main() {
 // a stdio server. Deliberately fail-open: if the entrypoint cannot be resolved
 // we start anyway, because refusing to start is the far worse failure.
 function isDirectRun() {
+  // No module URL means this file was bundled (a Cloudflare Worker, for
+  // instance). There is no stdio to attach to there, so never start.
+  let self = null;
   try {
-    const entry = process.argv[1];
-    if (!entry) return true;
-    return realpathSync(entry) === realpathSync(fileURLToPath(import.meta.url));
+    self = import.meta.url ? fileURLToPath(import.meta.url) : null;
+  } catch {
+    self = null;
+  }
+  if (!self) return false;
+
+  const entry = process?.argv?.[1];
+  if (!entry) return true;
+  try {
+    return realpathSync(entry) === realpathSync(self);
   } catch {
     return true;
   }

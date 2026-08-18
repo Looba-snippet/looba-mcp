@@ -1,0 +1,7 @@
+# Local Worker development only (`npm run dev:worker`). Never commit .dev.vars.
+# In production these are set with `wrangler secret put` or in the dashboard.
+
+# REQUIRED in production. index.js falls back to randomBytes(32) per process,
+# which on a stateless Worker means a different secret per isolate: a token
+# minted by propose_snippets then fails verification in integrate_post.
+LOOBA_MCP_TOKEN_SECRET=dev-only-secret-not-for-production
