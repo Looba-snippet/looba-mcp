@@ -1,6 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "looba-mcp",
+  // Looba.dev account. Pinned so a login that also sees other accounts
+  // (e.g. Kroco) never deploys there by mistake.
+  "account_id": "ecf94f92cb7521087841d37c529babd6",
   "main": "worker.js",
   "compatibility_date": "2026-08-18",
 
